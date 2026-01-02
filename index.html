@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Home Value Estimator</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 flex items-center justify-center px-4">
+
+  <!-- Card -->
+  <div class="w-full max-w-md bg-white/90 backdrop-blur rounded-3xl shadow-2xl p-6 sm:p-8">
+
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">
+        🏡 Home Value Estimator
+      </h1>
+      <p class="text-slate-500 text-sm mt-2">
+        Get an approximate house price instantly
+      </p>
+    </div>
+
+    <!-- Inputs -->
+    <div class="space-y-4">
+
+      <!-- Grade -->
+      <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1">
+          House Grade (1 – 13)
+        </label>
+        <input
+          id="grade"
+          type="number"
+          min="1"
+          max="13"
+          placeholder="e.g. 7"
+          class="w-full p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+
+      <!-- Sqft Living -->
+      <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1">
+          Living Area (sqft)
+        </label>
+        <input
+          id="sqft_living"
+          type="number"
+          min="300"
+          max="10000"
+          placeholder="e.g. 1500"
+          class="w-full p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+
+      <!-- Sqft Above -->
+      <div>
+        <label class="block text-sm font-medium text-slate-600 mb-1">
+          Sqft Above Ground
+        </label>
+        <input
+          id="sqft_above"
+          type="number"
+          min="300"
+          max="10000"
+          placeholder="e.g. 1200"
+          class="w-full p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+
+      <!-- Button -->
+      <button
+        onclick="predictPrice()"
+        class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold text-lg
+               hover:bg-indigo-700 transition active:scale-[0.97]"
+      >
+        Estimate Price
+      </button>
+    </div>
+
+    <!-- Result -->
+    <div id="result" class="mt-8 text-center"></div>
+
+    <!-- Footer -->
+    <div class="mt-8 text-center text-xs text-slate-400">
+      Approximate value based on historical data
+    </div>
+  </div>
+
+<script>
+async function predictPrice() {
+  const grade = Number(document.getElementById("grade").value);
+  const sqft_living = Number(document.getElementById("sqft_living").value);
+  const sqft_above = Number(document.getElementById("sqft_above").value);
+  const result = document.getElementById("result");
+
+  if (!grade || !sqft_living || !sqft_above) {
+    result.innerHTML = `<p class="text-red-500">Please fill all fields</p>`;
+    return;
+  }
+
+  if (grade < 1 || grade > 13) {
+    result.innerHTML = `<p class="text-red-500">Grade must be between 1 and 13</p>`;
+    return;
+  }
+
+  if (sqft_living < 300 || sqft_living > 10000 || sqft_above < 300 || sqft_above > 10000) {
+    result.innerHTML = `<p class="text-red-500">Sqft values are unrealistic</p>`;
+    return;
+  }
+
+  result.innerHTML = `
+    <div class="flex justify-center items-center space-x-2">
+      <div class="w-4 h-4 rounded-full bg-indigo-600 animate-bounce"></div>
+      <div class="w-4 h-4 rounded-full bg-indigo-600 animate-bounce [animation-delay:-.15s]"></div>
+      <div class="w-4 h-4 rounded-full bg-indigo-600 animate-bounce [animation-delay:-.3s]"></div>
+    </div>
+    <p class="text-slate-500 text-sm mt-2">Calculating estimate…</p>
+  `;
+
+  try {
+    const response = await fetch("http://127.0.0.1:8000/predict", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ grade, sqft_living, sqft_above })
+    });
+
+    const data = await response.json();
+
+    result.innerHTML = `
+      <div class="mt-4">
+        <p class="text-sm text-slate-500">Estimated Market Price</p>
+        <p class="text-3xl font-bold text-indigo-600 mt-1">
+          $ ${Math.round(data.price).toLocaleString()}
+        </p>
+      </div>
+    `;
+  } catch (err) {
+    result.innerHTML = `<p class="text-red-500">Server not reachable</p>`;
+  }
+}
+</script>
+
+</body>
+</html>
